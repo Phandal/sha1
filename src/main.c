@@ -15,20 +15,18 @@ typedef struct {
   uint8_t block[SHA1_BLOCK_SIZE];
 } sha1_ctx_t;
 
-sha1_ctx_t *sha1_init();
+sha1_err sha1_init(sha1_ctx_t *ctx);
 sha1_err sha1_feed(sha1_ctx_t *ctx, const uint8_t *data, size_t len);
 sha1_err sha1_digest(sha1_ctx_t *ctx, uint8_t digest[20]);
-void sha1_destroy(sha1_ctx_t *ctx);
 sha1_err _sha1_compress_block(sha1_ctx_t *ctx);
 
-sha1_ctx_t *sha1_init() {
-  sha1_ctx_t *ctx = calloc(1, sizeof(sha1_ctx_t));
+sha1_err sha1_init(sha1_ctx_t *ctx) {
   if (!ctx) {
-    return NULL;
+    return SHA1_NULL;
   }
 
   ctx->block_idx = 0;
-  return ctx;
+  return SHA1_OK;
 }
 
 sha1_err sha1_feed(sha1_ctx_t *ctx, const uint8_t *data, size_t len) {
@@ -61,15 +59,6 @@ sha1_err sha1_digest(sha1_ctx_t *ctx, uint8_t digest[20]) {
   return SHA1_OK;
 }
 
-void sha1_destory(sha1_ctx_t *ctx) {
-  if (!ctx) {
-    return;
-  }
-
-  free(ctx);
-  ctx = NULL;
-}
-
 sha1_err _sha1_compress_block(sha1_ctx_t *ctx) {
   // TODO: actually do the sha1 hash on the block here
   printf("Compressing Block:\n");
@@ -84,27 +73,28 @@ sha1_err _sha1_compress_block(sha1_ctx_t *ctx) {
 }
 
 int main(void) {
+  sha1_ctx_t ctx;
   sha1_err err;
   uint8_t digest[20];
   size_t len;
   uint8_t data[512];
   // uint8_t data[3] = {'a', 'b', 'c'};
 
-  sha1_ctx_t *ctx = sha1_init();
-  if (!ctx) {
+  err = sha1_init(&ctx);
+  if (err != SHA1_OK) {
     fprintf(stderr, "Could not initialize sha1 context\n");
     return 1;
   }
 
   while ((len = fread(data, 1, 512, stdin)) > 0) {
-    err = sha1_feed(ctx, data, len);
+    err = sha1_feed(&ctx, data, len);
     if (err != SHA1_OK) {
       fprintf(stderr, "sha1 feed error\n");
       return 1;
     }
   }
 
-  err = sha1_digest(ctx, digest);
+  err = sha1_digest(&ctx, digest);
   if (err != SHA1_OK) {
     fprintf(stderr, "sha1 digest error\n");
     return 1;
@@ -116,7 +106,6 @@ int main(void) {
   }
   printf("\n");
 
-  sha1_destory(ctx);
   return 0;
 }
 
