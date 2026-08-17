@@ -13,6 +13,7 @@ typedef enum {
 typedef struct {
   int block_idx;
   uint8_t block[SHA1_BLOCK_SIZE];
+  uint32_t hash[5];
 } sha1_ctx_t;
 
 sha1_err sha1_init(sha1_ctx_t *ctx);
@@ -26,6 +27,13 @@ sha1_err sha1_init(sha1_ctx_t *ctx) {
   }
 
   ctx->block_idx = 0;
+
+  ctx->hash[0] = 0X67452301;
+  ctx->hash[1] = 0XEFCDAB89;
+  ctx->hash[2] = 0X98BADCFE;
+  ctx->hash[3] = 0X10325476;
+  ctx->hash[4] = 0XC3D2E1F0;
+
   return SHA1_OK;
 }
 
@@ -60,13 +68,16 @@ sha1_err sha1_digest(sha1_ctx_t *ctx, uint8_t digest[20]) {
 }
 
 sha1_err _sha1_compress_block(sha1_ctx_t *ctx) {
-  // TODO: actually do the sha1 hash on the block here
-  printf("Compressing Block:\n");
-  for (int i = 0; i < SHA1_BLOCK_SIZE; ++i) {
-    printf("%02X", ctx->block[i]);
-    ctx->block[i] = '\0';
+  uint32_t W[80];
+  // uint32_t temp, a, b, c, d, e;
+
+  // Load the first 1n words into the W array
+  for (int i = 0; i < 16; ++i) {
+    W[i] = ctx->block[i * 4] << 24;
+    W[i] |= ctx->block[i * 4 + 1] << 16;
+    W[i] |= ctx->block[i * 4 + 2] << 8;
+    W[i] |= ctx->block[i * 4 + 3];
   }
-  printf("\n");
 
   ctx->block_idx = 0;
   return SHA1_OK;
