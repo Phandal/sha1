@@ -1,2 +1,7 @@
 all:
-	clang -o hash -Wall -Werror -Wextra src/*.c
+	clang -o hash -Wall -Werror -Wextra -g src/*.c
+
+clean:
+	rm -rf hash
+
+.PHONY: clean
