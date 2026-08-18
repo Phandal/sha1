@@ -5,6 +5,8 @@
 
 #define SHA1_BLOCK_SIZE 64
 
+#define SHA1_ROTATE(x, n) (x << n | x >> (n - 1))
+
 typedef enum {
   SHA1_OK = 0,
   SHA1_NULL,
@@ -63,22 +65,87 @@ sha1_err sha1_digest(sha1_ctx_t *ctx, uint8_t digest[20]) {
     return SHA1_NULL;
   }
 
-  memmove(digest, "Digest Here", 12);
+  for (int i = 0; i < 5; ++i) {
+    digest[i * 4] = ctx->hash[i] >> 24;
+    digest[i * 4 + 1] = ctx->hash[i] >> 16;
+    digest[i * 4 + 2] = ctx->hash[i] >> 8;
+    digest[i * 4 + 3] = ctx->hash[i];
+  }
+
   return SHA1_OK;
 }
 
 sha1_err _sha1_compress_block(sha1_ctx_t *ctx) {
+  uint32_t K[4] = { 0X5A827999, 0X6ED9EBA1, 0X8F1BBCDC, 0XCA62C1D6 };
   uint32_t W[80];
-  // uint32_t temp, a, b, c, d, e;
+  int i;
+  uint32_t temp, a, b, c, d, e;
 
+  // 1. expand the block into an array of 80 words
   // Load the first 1n words into the W array
-  for (int i = 0; i < 16; ++i) {
+  for (i = 0; i < 16; ++i) {
     W[i] = ctx->block[i * 4] << 24;
     W[i] |= ctx->block[i * 4 + 1] << 16;
     W[i] |= ctx->block[i * 4 + 2] << 8;
     W[i] |= ctx->block[i * 4 + 3];
   }
 
+  // Load the rest of the words in the W array with a formula
+  // W[i] = ROTL(W[i-3] XOR W[i-8] XOR W[i-14] XOR W[i-16], 1)
+  for (i = 16; i < 80; ++i) {
+      W[i] = SHA1_ROTATE(W[i-3] ^ W[i-8] ^ W[i-14] ^ W[i-16], 1);
+  }
+
+  // 2. Setup the initial working vars
+  a = ctx->hash[0];
+  b = ctx->hash[1];
+  c = ctx->hash[2];
+  d = ctx->hash[3];
+  e = ctx->hash[4];
+
+  // 3. Run 80 rounds of compression on the word array
+  for (i = 0; i < 20; ++i) {
+    temp = SHA1_ROTATE(a, 5) + ((b & c) | ((~b) & d)) + e + W[i] + K[0];
+    e = d;
+    d = c;
+    c = SHA1_ROTATE(b, 30);
+    b = a;
+    a = temp;
+  }
+
+  for (i = 20; i < 40; ++i) {
+    temp = SHA1_ROTATE(a, 5) + (b ^ c ^ d) + e + W[i] + K[1];
+    e = d;
+    d = c;
+    c = SHA1_ROTATE(b, 30);
+    b = a;
+    a = temp;
+  }
+
+  for (i = 40; i < 60; ++i) {
+    temp = SHA1_ROTATE(a, 5) + ((b & c) | (b & d) | (c & d)) + e + W[i] + K[2];
+    e = d;
+    d = c;
+    c = SHA1_ROTATE(b, 30);
+    b = a;
+    a = temp;
+  }
+
+  for (i = 60; i < 80; ++i) {
+    temp = SHA1_ROTATE(a, 5) + (b ^ c ^ d) + e + W[i] + K[3];
+    e = d;
+    d = c;
+    c = SHA1_ROTATE(b, 30);
+    b = a;
+    a = temp;
+  }
+
+  ctx->hash[0] += a;
+  ctx->hash[1] += b;
+  ctx->hash[2] += c;
+  ctx->hash[3] += d;
+  ctx->hash[4] += e;
+  
   ctx->block_idx = 0;
   return SHA1_OK;
 }
