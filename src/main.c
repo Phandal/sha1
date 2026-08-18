@@ -95,10 +95,10 @@ sha1_err _sha1_compress_block(sha1_ctx_t *ctx) {
   // 1. expand the block into an array of 80 words
   // Load the first 1n words into the W array
   for (i = 0; i < 16; ++i) {
-    W[i] = ctx->block[i * 4] << 24;
-    W[i] |= ctx->block[i * 4 + 1] << 16;
-    W[i] |= ctx->block[i * 4 + 2] << 8;
-    W[i] |= ctx->block[i * 4 + 3];
+    W[i] = (uint32_t)ctx->block[i * 4] << 24;
+    W[i] |= (uint32_t)ctx->block[i * 4 + 1] << 16;
+    W[i] |= (uint32_t)ctx->block[i * 4 + 2] << 8;
+    W[i] |= (uint32_t)ctx->block[i * 4 + 3];
   }
 
   // Load the rest of the words in the W array with a formula
