@@ -5,7 +5,7 @@
 int main(void) {
   sha1_ctx_t ctx;
   sha1_err err;
-  uint8_t digest[20];
+  uint8_t digest[SHA1_HASH_SIZE];
   size_t len;
   uint8_t data[512];
 
@@ -29,8 +29,7 @@ int main(void) {
     return 1;
   }
 
-  // printf("Digest:\n");
-  for (int i = 0; i < 20; ++i) {
+  for (int i = 0; i < SHA1_HASH_SIZE; ++i) {
     printf("%02x", digest[i]);
   }
   printf("\n");

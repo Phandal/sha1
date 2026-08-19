@@ -1,5 +1,9 @@
 #include "sha1.h"
 
+void _sha1_compress_block(sha1_ctx_t *ctx);
+void _sha1_pad_block(sha1_ctx_t *ctx);
+uint32_t _sha1_rotate(uint32_t x, int n);
+
 sha1_err sha1_init(sha1_ctx_t *ctx) {
   if (!ctx) {
     return SHA1_NULL;
@@ -7,6 +11,11 @@ sha1_err sha1_init(sha1_ctx_t *ctx) {
 
   ctx->block_idx = 0;
   ctx->message_length = 0;
+  ctx->digested = 0;
+
+  for (int x = 0; x < SHA1_BLOCK_SIZE; ++x) {
+    ctx->block[x] = 0;
+  }
 
   ctx->hash[0] = 0X67452301;
   ctx->hash[1] = 0XEFCDAB89;
@@ -24,12 +33,13 @@ sha1_err sha1_feed(sha1_ctx_t *ctx, const uint8_t *data, size_t len) {
     return SHA1_NULL;
   }
 
+  if (ctx->digested) {
+    return SHA1_CORRUPT;
+  }
+
   for (size_t x = 0; x < len; ++x) {
     if (ctx->block_idx == SHA1_BLOCK_SIZE) {
-      err = _sha1_compress_block(ctx);
-      if (err != SHA1_OK) {
-        return err;
-      }
+      _sha1_compress_block(ctx);
     }
 
     ctx->block[ctx->block_idx++] = data[x];
@@ -45,13 +55,25 @@ sha1_err sha1_feed(sha1_ctx_t *ctx, const uint8_t *data, size_t len) {
 }
 
 sha1_err sha1_digest(sha1_ctx_t *ctx, uint8_t digest[20]) {
+  sha1_err err;
   if (!ctx) {
     return SHA1_NULL;
   }
 
+  if (ctx->digested) {
+    return SHA1_CORRUPT;
+  }
+
   _sha1_pad_block(ctx);
 
-  for (int i = 0; i < 5; ++i) {
+  // Clear the block
+  for (int x = 0; x < SHA1_BLOCK_SIZE; ++x) {
+    ctx->block[x] = 0;
+  }
+
+  ctx->digested = 1;
+
+  for (int i = 0; i < SHA1_HASH_SIZE / 4; ++i) {
     digest[i * 4] = ctx->hash[i] >> 24;
     digest[i * 4 + 1] = ctx->hash[i] >> 16;
     digest[i * 4 + 2] = ctx->hash[i] >> 8;
@@ -61,7 +83,7 @@ sha1_err sha1_digest(sha1_ctx_t *ctx, uint8_t digest[20]) {
   return SHA1_OK;
 }
 
-sha1_err _sha1_compress_block(sha1_ctx_t *ctx) {
+void _sha1_compress_block(sha1_ctx_t *ctx) {
   uint32_t K[4] = {0X5A827999, 0X6ED9EBA1, 0X8F1BBCDC, 0XCA62C1D6};
   uint32_t W[80];
   int i;
@@ -133,12 +155,11 @@ sha1_err _sha1_compress_block(sha1_ctx_t *ctx) {
   ctx->hash[4] += e;
 
   ctx->block_idx = 0;
-  return SHA1_OK;
 }
 
 uint32_t _sha1_rotate(uint32_t x, int n) { return (x << n) | (x >> (32 - n)); }
 
-sha1_err _sha1_pad_block(sha1_ctx_t *ctx) {
+void _sha1_pad_block(sha1_ctx_t *ctx) {
   if (ctx->block_idx < 55) {
     ctx->block[ctx->block_idx++] = 0x80;
 
@@ -169,6 +190,4 @@ sha1_err _sha1_pad_block(sha1_ctx_t *ctx) {
   ctx->block[ctx->block_idx++] = ctx->message_length;
 
   _sha1_compress_block(ctx);
-
-  return SHA1_OK;
 }
