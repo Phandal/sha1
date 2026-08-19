@@ -24,6 +24,6 @@ typedef struct {
 
 sha1_err sha1_init(sha1_ctx_t *ctx);
 sha1_err sha1_feed(sha1_ctx_t *ctx, const uint8_t *data, size_t len);
-sha1_err sha1_digest(sha1_ctx_t *ctx, uint8_t digest[20]);
+sha1_err sha1_digest(sha1_ctx_t *ctx, uint8_t digest[SHA1_HASH_SIZE]);
 
 #endif // SHA1_H

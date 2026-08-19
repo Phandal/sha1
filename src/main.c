@@ -1,8 +1,13 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "sha1.h"
+#include "sha256.h"
 
-int main(void) {
+int sha1(void);
+int sha256(void);
+
+int sha1(void) {
   sha1_ctx_t ctx;
   sha1_err err;
   uint8_t digest[SHA1_HASH_SIZE];
@@ -11,7 +16,7 @@ int main(void) {
 
   err = sha1_init(&ctx);
   if (err != SHA1_OK) {
-    fprintf(stderr, "Could not initialize sha1 context\n");
+    fprintf(stderr, "could not initialize sha1 context\n");
     return 1;
   }
 
@@ -35,4 +40,36 @@ int main(void) {
   printf("\n");
 
   return 0;
+}
+
+int sha256(void) {
+  sha256_ctx_t ctx;
+  sha256_err err;
+
+  err = sha256_init(&ctx);
+  if (err != SHA256_OK) {
+    return fprintf(stderr, "could not initialize sha256 context\n");
+    return 1;
+  }
+
+  return 0;
+}
+
+void usage() { fprintf(stderr, "usage: hash {sha1|sha256}\n"); }
+
+int main(int argc, char **argv) {
+
+  if (argc != 2) {
+    usage();
+    return 1;
+  }
+
+  if (strcmp(argv[1], "sha1") == 0) {
+    return sha1();
+  } else if (strcmp(argv[1], "sha256") == 0) {
+    return sha256();
+  } else {
+    usage();
+    return 1;
+  }
 }
