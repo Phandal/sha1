@@ -54,7 +54,7 @@ sha1_err sha1_feed(sha1_ctx_t *ctx, const uint8_t *data, size_t len) {
   return SHA1_OK;
 }
 
-sha1_err sha1_digest(sha1_ctx_t *ctx, uint8_t digest[20]) {
+sha1_err sha1_digest(sha1_ctx_t *ctx, uint8_t digest[SHA1_HASH_SIZE]) {
   sha1_err err;
   if (!ctx) {
     return SHA1_NULL;
